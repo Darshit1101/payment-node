@@ -1,4 +1,4 @@
-import stripe from "../../../../config/stripe.js";
+import stripe from "../../../../configs/stripe.js";
 
 const createPaymentIntent = async (req, res) => {
   try {

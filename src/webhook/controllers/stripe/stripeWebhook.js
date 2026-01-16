@@ -1,5 +1,5 @@
-import stripe from "../../../config/stripe.js";
-import { STRIPE_TEST_WEBHOOK_SECRET } from "../../../config/environment.config.js";
+import stripe from "../../../configs/stripe.js";
+import { STRIPE_TEST_WEBHOOK_SECRET } from "../../../configs/environment.config.js";
 
 const stripeWebhook = (req, res) => {
   const sig = req.headers["stripe-signature"];
