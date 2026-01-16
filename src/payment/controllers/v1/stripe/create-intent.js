@@ -8,7 +8,7 @@ const createIntent = async (req, res) => {
 
     //amount only decided by backend
     const currency = "inr";
-    const amountInRupees = 5000;
+    const amountInRupees = 15000;
     const amount = amountInRupees * 100;
 
     //Stripe PaymentIntent create
