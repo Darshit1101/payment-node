@@ -48,8 +48,21 @@ const stripeWebhook = async (req, res) => {
         );
         break;
 
+      case "payment_intent.canceled":
+        await Payment.findOneAndUpdate(
+          {
+            paymentIntentId: paymentIntent.id,
+            status: { $ne: "CANCELED" },
+          },
+          {
+            status: "CANCELED",
+            stripeResponse: paymentIntent,
+          }
+        );
+        break;
+
       default:
-        console.log("Unhandled event:", event.type);
+        console.log("Unhandled event==>", event.type);
     }
 
     res.json({ received: true });

@@ -7,8 +7,9 @@ const createIntent = async (req, res) => {
     const userId = "696a0b0e7de7259de9e0c76a"; // temporary hardcoded userId
 
     //  amount hamesha backend decide kare
-    const amount = 10000;
     const currency = "inr";
+    const amountInRupees = 30000;
+    const amount = amountInRupees * 100;
 
     // 1️⃣ Stripe PaymentIntent create
     const paymentIntent = await stripe.paymentIntents.create({
