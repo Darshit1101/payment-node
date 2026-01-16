@@ -4,7 +4,7 @@ import { APP_DB_URI } from "./environment.config.js";
 const appDb = mongoose.createConnection(APP_DB_URI);
 
 appDb.on("connected", () => {
-  console.log("MongoDB connected successfully");
+  console.log("==MongoDB connected successfully==");
 });
 
 export { appDb };

@@ -1,41 +1,47 @@
 import stripe from "../../../../configs/stripe.js";
+import Payment from "../../../../models/Payment.js";
 
-const createPaymentIntent = async (req, res) => {
+const createIntent = async (req, res) => {
   try {
-    const { amount, currency } = req.body;
+    // const userId = req.user.id; // auth middleware se aayega
+    const userId = "696a0b0e7de7259de9e0c76a"; // temporary hardcoded userId
 
-    // Basic validation
-    if (!amount || !currency) {
-      return res.status(400).json({
-        success: false,
-        message: "Amount and currency are required",
-      });
-    }
+    //  amount hamesha backend decide kare
+    const amount = 10000;
+    const currency = "inr";
 
-    if (typeof amount !== "number" || amount <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Amount must be a positive number",
-      });
-    }
-
+    // 1️⃣ Stripe PaymentIntent create
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount), // Ensure integer
-      currency: currency.toLowerCase(),
+      amount,
+      currency,
+      automatic_payment_methods: {
+        enabled: true,
+      },
     });
 
-    res.status(200).json({
+    // 2️⃣ Payment DB entry
+    const payment = await Payment.create({
+      userId,
+      amount,
+      currency,
+      paymentIntentId: paymentIntent.id,
+      status: "PENDING",
+    });
+
+    // 3️⃣ Frontend response
+    return res.status(200).json({
       success: true,
-      data: paymentIntent,
+      clientSecret: paymentIntent.client_secret,
+      paymentId: payment._id,
+      paymentIntentId: paymentIntent.id,
     });
   } catch (error) {
-    console.error("Error creating payment intent:", error);
-    res.status(500).json({
+    console.error("Create Payment Intent Error:", error);
+    return res.status(500).json({
       success: false,
-      message: "Failed to create payment intent",
-      error: error.message,
+      message: error.message,
     });
   }
 };
 
-export default createPaymentIntent;
+export default createIntent;

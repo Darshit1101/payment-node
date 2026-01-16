@@ -1,9 +1,9 @@
 import stripe from "../../../configs/stripe.js";
 import { STRIPE_TEST_WEBHOOK_SECRET } from "../../../configs/environment.config.js";
+import Payment from "../../../models/Payment.js";
 
-const stripeWebhook = (req, res) => {
+const stripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
-
   let event;
 
   try {
@@ -13,20 +13,50 @@ const stripeWebhook = (req, res) => {
       STRIPE_TEST_WEBHOOK_SECRET
     );
   } catch (err) {
+    console.error("Webhook signature error:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === "payment_intent.succeeded") {
+  try {
     const paymentIntent = event.data.object;
-    console.log("✅ Payment Success:", paymentIntent.id);
-    // 👉 Update DB here
-  }
 
-  if (event.type === "payment_intent.payment_failed") {
-    console.log("❌ Payment Failed");
-  }
+    switch (event.type) {
+      case "payment_intent.succeeded":
+        await Payment.findOneAndUpdate(
+          {
+            paymentIntentId: paymentIntent.id,
+            status: { $ne: "SUCCESS" }, // idempotent
+          },
+          {
+            status: "SUCCESS",
+            method: paymentIntent.payment_method_types?.[0],
+            stripeResponse: paymentIntent,
+          }
+        );
+        break;
 
-  res.json({ received: true });
+      case "payment_intent.payment_failed":
+        await Payment.findOneAndUpdate(
+          {
+            paymentIntentId: paymentIntent.id,
+            status: { $ne: "FAILED" },
+          },
+          {
+            status: "FAILED",
+            stripeResponse: paymentIntent,
+          }
+        );
+        break;
+
+      default:
+        console.log("Unhandled event:", event.type);
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error("Webhook handler error:", error);
+    res.status(500).json({ error: "Webhook handler failed" });
+  }
 };
 
 export default stripeWebhook;
