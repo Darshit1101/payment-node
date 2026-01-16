@@ -6,6 +6,7 @@ const stripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
   let event;
 
+  // 1️⃣ Verify Stripe signature
   try {
     event = stripe.webhooks.constructEvent(
       req.body,
@@ -17,30 +18,25 @@ const stripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  try {
-    const paymentIntent = event.data.object;
+  const paymentIntent = event.data.object;
 
+  try {
     switch (event.type) {
       case "payment_intent.succeeded":
+        console.log("✅ Payment Success:", paymentIntent.id);
         await Payment.findOneAndUpdate(
-          {
-            paymentIntentId: paymentIntent.id,
-            status: { $ne: "SUCCESS" }, // idempotent
-          },
+          { paymentIntentId: paymentIntent.id },
           {
             status: "SUCCESS",
-            method: paymentIntent.payment_method_types?.[0],
             stripeResponse: paymentIntent,
           }
         );
         break;
 
       case "payment_intent.payment_failed":
+        console.log("❌ Payment Failed:", paymentIntent.id);
         await Payment.findOneAndUpdate(
-          {
-            paymentIntentId: paymentIntent.id,
-            status: { $ne: "FAILED" },
-          },
+          { paymentIntentId: paymentIntent.id },
           {
             status: "FAILED",
             stripeResponse: paymentIntent,
@@ -49,11 +45,9 @@ const stripeWebhook = async (req, res) => {
         break;
 
       case "payment_intent.canceled":
+        console.log("🚫 Payment Canceled:", paymentIntent.id);
         await Payment.findOneAndUpdate(
-          {
-            paymentIntentId: paymentIntent.id,
-            status: { $ne: "CANCELED" },
-          },
+          { paymentIntentId: paymentIntent.id },
           {
             status: "CANCELED",
             stripeResponse: paymentIntent,
@@ -62,13 +56,13 @@ const stripeWebhook = async (req, res) => {
         break;
 
       default:
-        console.log("Unhandled event==>", event.type);
+        console.log("ℹ️ Unhandled event:", event.type);
     }
 
     res.json({ received: true });
   } catch (error) {
-    console.error("Webhook handler error:", error);
-    res.status(500).json({ error: "Webhook handler failed" });
+    console.error("Webhook DB update error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
