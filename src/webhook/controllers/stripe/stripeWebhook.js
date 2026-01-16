@@ -6,7 +6,7 @@ const stripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
   let event;
 
-  // 1️⃣ Verify Stripe signature
+  // Verify Stripe signature
   try {
     event = stripe.webhooks.constructEvent(
       req.body,
@@ -56,7 +56,7 @@ const stripeWebhook = async (req, res) => {
         break;
 
       default:
-        console.log("ℹ️ Unhandled event:", event.type);
+        console.log("Unhandled event:", event.type);
     }
 
     res.json({ received: true });
