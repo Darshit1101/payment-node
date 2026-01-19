@@ -3,8 +3,11 @@ import { PORT } from "./configs/environment.config.js";
 import paymentRouter from "./payment/app.route.js";
 import webhookRouter from "./webhook/webhook.route.js";
 import { appDb } from "./configs/dbConnection.config.js";
+import cors from "cors";
 
 const app = express();
+
+app.use(cors());
 
 //webhook
 app.use(webhookRouter);
